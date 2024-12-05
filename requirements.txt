@@ -1,0 +1,10 @@
+streamlit
+pandas
+torch
+openai
+json
+BERT
+numpy
+sklearn
+transformers 
+subprocess
