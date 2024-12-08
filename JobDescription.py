@@ -8,14 +8,15 @@ from IPython.display import clear_output, HTML
 from tqdm import tqdm
 
 
-
+with open ("JobDescription.txt", 'r') as file:
+    job_description_content = file.read()
 JobDescription = "JobDescription.txt"
 
 
 structure_template = """{
-  "jobTitle": "", // The title or role of the job
-  "company": "", // Name of the company
-  "location": "", // Job location
+  "jobTitle": "", 
+  "company": "",
+  "location": "",
   "keyResponsibilities": [
     "", // Key responsibility 1
     "", // Key responsibility 2
@@ -31,8 +32,7 @@ structure_template = """{
     "", // Qualification 2
     ""  // Qualification 3
   ],
-  "jobSummary": "", // A short description summarizing the role
-  "applicationLink": "" // Link to apply for the job
+  "jobSummary": "",
 }
 
 
@@ -40,8 +40,8 @@ structure_template = """{
 """
 
 
-# Set up the Ollama chat call
-response = openai.chat(
+# Set up the OpenAI chat call
+response = openai.ChatCompletion.create(
     model="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
     messages=[
         {
@@ -50,11 +50,11 @@ response = openai.chat(
         },
         {
             "role": "user",
-            "content": f"Analyze the following Job Description{JobDescription} and extract the necessary skills to perform successfully in the position. Use this structure to guide the extraction: {structure_template}. DO NOT INVENT THINGS!"
+            "content": f"Analyze the following Job Description: {job_description_content} and extract the necessary skills to perform successfully in the position. Use this structure to guide the extraction: {structure_template}. DO NOT INVENT THINGS!"
         }
     ]
 )
 
 # Extract and print the response
-chat_completion = response['message']['content']
+chat_completion = response['choices'][0]['message']['content']
 print(chat_completion)
