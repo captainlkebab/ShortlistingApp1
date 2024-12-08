@@ -12,7 +12,13 @@ with open ("JobDescription.txt", 'r') as file:
     job_description_content = file.read()
 JobDescription = "JobDescription.txt"
 
-client = OpenAI()
+
+TOGETHER_API_KEY='0d0196f9b88ed8acff24e16e3c58e21a57f085bffe081451d85ad19ff4a97b12'
+
+client = OpenAI(
+    base_url="https://api.together.xyz/v1",
+    api_key=TOGETHER_API_KEY
+)
 
 
 structure_template = """{
