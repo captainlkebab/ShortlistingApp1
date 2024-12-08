@@ -2,7 +2,6 @@ streamlit
 pandas
 torch
 openai
-json
 BERT
 numpy<2.0
 sklearn
