@@ -4,7 +4,8 @@ torch
 openai
 json
 BERT
-numpy
+numpy<2.0
 sklearn
 transformers 
 subprocess
+threading
