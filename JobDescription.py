@@ -48,7 +48,7 @@ response = ollama.chat(
         },
         {
             "role": "user",
-            "content": f"Analyze the following Job Description{JobDescription} and extract the necessary skills to perform successfully in the position.. Use this structure to guide the extraction: {structure_template}. DO NOT INVENT THINGS! STICK TO THE TRANSCRIPT!"
+            "content": f"Analyze the following Job Description{JobDescription} and extract the necessary skills to perform successfully in the position. Use this structure to guide the extraction: {structure_template}. DO NOT INVENT THINGS!"
         }
     ]
 )
