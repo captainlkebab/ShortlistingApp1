@@ -2,7 +2,17 @@ import streamlit as st
 import pandas as pd 
 import numpy as np  
 import subprocess
+import os
+import threading
 
+
+def start_ollama():
+    os.environ['OLLAMA_HOST'] = '0.0.0.0:11434'
+    os.environ['OLLAMA_ORIGINS'] = '*'
+    subprocess.Popen(["ollama", "serve"])
+
+ollama_thread = threading.Thread(target=start_ollama)
+ollama_thread.start()
 
 st.title("Welcome to this shortlisting app")
 
@@ -14,31 +24,39 @@ st.subheader("Job Description")
 
 job_description = st.text_area("Insert the Job Description for the desired job here.",height=300)
 
-# Button, um den Text zu speichern
-if st.button("Save Job description"):
-    # Speichern des Textes in einer Datei
+if st.button("Save and Analyze Job Description"):
     if job_description.strip():  # Überprüfen, ob der Text nicht leer ist
-        with open("JobDescription.txt", "w", encoding="utf-8") as file:
+        # Speichern der Jobbeschreibung
+        file_path = "JobDescription.txt"
+        with open(file_path, "w", encoding="utf-8") as file:
             file.write(job_description)
-        st.success("Jobbeschreibung wurde erfolgreich gespeichert!")
+        st.success("Job description successfully uploaded!")
+        
+# Run von JobDescription.py
+        try:
+            result = subprocess.run(
+                ["python", "JobDescription.py", file_path],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            st.subheader("Analyzer Output:")
+            st.text(result.stdout)
+        except subprocess.CalledProcessError as e:
+            st.error(f"Error running JobDescription.py: {e.stderr}")
     else:
-        st.error("Das Eingabefeld darf nicht leer sein!")
-
-if job_description:
-    st.write("Jobbeschreibung wurde erfolgreich gespeichert in JobDescription.txt")
-else: 
-    st.write("Keine Jobbeschreibung eingegeben")
+        st.error("The input field cannot be empty!")
 
 
 
 # CSV-Upload
 st.subheader("CSV-Datei upload")
-uploaded_file = st.file_uploader("Upload the CSV file with the resumes here:", type=["csv"])
+resume_list = st.file_uploader("Upload the CSV file with the resumes here:", type=["csv"])
 
-if uploaded_file:
+if resume_list:
     try:
         # CSV in ein DataFrame laden
-        df = pd.read_csv(uploaded_file)
+        df = pd.read_csv(resume_list)
         st.success("CSV-Datei wurde erfolgreich hochgeladen!")
         
         # Vorschau der ersten Zeilen der Datei anzeigen
@@ -49,7 +67,7 @@ if uploaded_file:
             # Speichere die hochgeladene Datei lokal
             csv_file_path = "uploaded_file.csv"
             with open(csv_file_path, "wb") as file:
-                file.write(uploaded_file.getbuffer())
+                file.write(resume_list.getbuffer())
             
             # Führe das bestFit-Skript aus
             try:
