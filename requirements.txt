@@ -4,7 +4,7 @@ torch
 openai
 BERT
 numpy<2.0
-sklearn
+scikit-learn
 transformers 
 subprocess
 threading
