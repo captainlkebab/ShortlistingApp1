@@ -6,3 +6,4 @@ BERT
 numpy<2.0
 scikit-learn
 transformers 
+IPython
