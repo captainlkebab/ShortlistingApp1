@@ -1,7 +1,7 @@
 import requests
 import json
 import os
-import openai
+from openai import OpenAI
 import subprocess
 import threading
 from IPython.display import clear_output, HTML
@@ -11,6 +11,8 @@ from tqdm import tqdm
 with open ("JobDescription.txt", 'r') as file:
     job_description_content = file.read()
 JobDescription = "JobDescription.txt"
+
+client = OpenAI()
 
 
 structure_template = """{
@@ -41,7 +43,7 @@ structure_template = """{
 
 
 # Set up the OpenAI chat call
-response = openai.ChatCompletion.create(
+response = client.chat.completions.create(
     model="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
     messages=[
         {
