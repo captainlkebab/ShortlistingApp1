@@ -6,7 +6,8 @@ import subprocess
 import threading
 from IPython.display import clear_output, HTML
 from tqdm import tqdm
-import ollama
+
+
 
 JobDescription = "JobDescription.txt"
 
@@ -38,9 +39,10 @@ structure_template = """{
 
 """
 
+
 # Set up the Ollama chat call
-response = ollama.chat(
-    model='qwen2.5',
+response = openai.chat(
+    model="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
     messages=[
         {
             "role": "system",
