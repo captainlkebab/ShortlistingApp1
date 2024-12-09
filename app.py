@@ -1,87 +1,92 @@
-import streamlit as st 
-import pandas as pd 
-import numpy as np  
+import streamlit as st
+import pandas as pd
 import subprocess
-import os
-import threading
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
+# Modell initialisieren
+model_name = "Qwen/Qwen2.5-72B-Instruct"
+model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype="auto", device_map="auto")
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-def start_ollama():
-    os.environ['OLLAMA_HOST'] = '0.0.0.0:11434'
-    os.environ['OLLAMA_ORIGINS'] = '*'
-    subprocess.Popen(["ollama", "serve"])
+# **Streamlit App Header**
+st.title("Welcome to the Shortlisting App")
 
-ollama_thread = threading.Thread(target=start_ollama)
-ollama_thread.start()
+st.markdown("""
+Through this application, your organization can streamline the hiring process for any open position. 
+Simply import candidate resumes in CSV format and upload them here.
+By providing a Job Description, our system evaluates the candidates and outputs the top 10 for further interviews.
+""")
 
-st.title("Welcome to this shortlisting app")
-
-st.markdown("""Through this application your organization can streamline the hiring process for any open position. 
-Simply import the candidate Resume CSV and upload it here.
-by providing the Job Descriptions our Evaluation system can output the top 10 best candidates for the position to invite them to further interviews.""")
-
+# **Job Description Input**
 st.subheader("Job Description")
+job_description = st.text_area("Insert the Job Description here:", height=300)
 
-job_description = st.text_area("Insert the Job Description for the desired job here.",height=300)
+def save_and_analyze_job_description(job_description):
+    """Speichern und Analyse der Jobbeschreibung."""
+    file_path = "JobDescription.txt"
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(job_description)
+    
+    try:
+        # JobDescription.py ausführen
+        result = subprocess.run(
+            ["python", "JobDescription.py", file_path],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        st.error(f"Error running JobDescription.py: {e.stderr}")
+        return None
 
 if st.button("Save and Analyze Job Description"):
-    if job_description.strip():  # Überprüfen, ob der Text nicht leer ist
-        # Speichern der Jobbeschreibung
-        file_path = "JobDescription.txt"
-        with open(file_path, "w", encoding="utf-8") as file:
-            file.write(job_description)
-        st.success("Job description successfully uploaded!")
+    if job_description.strip():
+        output = save_and_analyze_job_description(job_description)
+        if output:
+            st.success("Job description successfully analyzed!")
+            st.subheader("Analyzer Output:")
+            st.text(output)
+    else:
+        st.error("The Job Description field cannot be empty!")
+
+# **CSV Upload**
+st.subheader("CSV Upload")
+resume_list = st.file_uploader("Upload candidate resumes in CSV format:", type=["csv"])
+
+def process_csv_file(csv_file):
+    """Laden und Verarbeiten der CSV-Datei."""
+    try:
+        df = pd.read_csv(csv_file)
+        st.success("CSV file successfully uploaded!")
+        st.dataframe(df.head())  # Zeige die ersten Zeilen der Datei an
+        return df
+    except Exception as e:
+        st.error(f"Error loading CSV file: {e}")
+        return None
+
+if resume_list:
+    df = process_csv_file(resume_list)
+
+# **CSV Processing with bestFit.py**
+if st.button("Process with bestFit.py"):
+    if resume_list:
+        csv_file_path = "uploaded_file.csv"
+        with open(csv_file_path, "wb") as file:
+            file.write(resume_list.getbuffer())
         
-# Run von JobDescription.py
         try:
+            # Führe das Skript aus
             result = subprocess.run(
-                ["python", "JobDescription.py", file_path],
+                ["python", "bestFit.py", csv_file_path],
                 capture_output=True,
                 text=True,
                 check=True
             )
-            st.subheader("Analyzer Output:")
+            st.subheader("Output from bestFit.py:")
             st.text(result.stdout)
         except subprocess.CalledProcessError as e:
-            st.error(f"Error running JobDescription.py: {e.stderr}")
+            st.error(f"Error running bestFit.py: {e.stderr}")
     else:
-        st.error("The input field cannot be empty!")
-
-
-
-# CSV-Upload
-st.subheader("CSV-Datei upload")
-resume_list = st.file_uploader("Upload the CSV file with the resumes here:", type=["csv"])
-
-if resume_list:
-    try:
-        # CSV in ein DataFrame laden
-        df = pd.read_csv(resume_list)
-        st.success("CSV-Datei wurde erfolgreich hochgeladen!")
-        
-        # Vorschau der ersten Zeilen der Datei anzeigen
-        st.dataframe(df.head())
-        
-        # Button für die Verarbeitung mit bestFit.py
-        if st.button("Mit bestFit.py verarbeiten"):
-            # Speichere die hochgeladene Datei lokal
-            csv_file_path = "uploaded_file.csv"
-            with open(csv_file_path, "wb") as file:
-                file.write(resume_list.getbuffer())
-            
-            # Führe das bestFit-Skript aus
-            try:
-                result = subprocess.run(
-                    ["python", "bestFit.py", csv_file_path],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-                # Zeige die Ausgabe des Skripts in der App an
-                st.subheader("Ausgabe von bestFit.py:")
-                st.text(result.stdout)
-            except subprocess.CalledProcessError as e:
-                st.error(f"Fehler bei der Ausführung von bestFit.py: {e.stderr}")
-    except Exception as e:
-        st.error(f"Fehler beim Laden der CSV-Datei: {e}")
+        st.error("Please upload a CSV file before processing!")
 
