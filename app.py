@@ -1,7 +1,16 @@
 import streamlit as st
 import pandas as pd
 import subprocess
-from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+model_id = "meta-llama/Llama-3.2-1B-Instruct"
+pipe = pipeline(
+    "text-generation",
+    model=model_id,
+    torch_dtype=torch.bfloat16,
+    device_map="auto",
+)
 
 # **Streamlit App Header**
 st.title("Welcome to the Shortlisting App")
