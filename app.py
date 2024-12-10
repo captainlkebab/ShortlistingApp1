@@ -3,6 +3,13 @@ import pandas as pd
 import subprocess
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+import os
+from huggingface_hub import login
+
+hf_token = os.getenv("HF_TOKEN")
+login(token=hf_token)
+
+
 
 model_id = "meta-llama/Llama-3.2-1B-Instruct"
 pipe = pipeline(
