@@ -11,7 +11,7 @@ login(token=hf_token)
 
 
 
-model_id = "meta-llama/Llama-3.3-70B-Instruct"
+model_id = "meta-llama/Llama-3.2-1B-Instruct"
 pipe = pipeline(
     "text-generation",
     model=model_id,
