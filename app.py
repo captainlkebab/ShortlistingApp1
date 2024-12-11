@@ -9,8 +9,6 @@ from huggingface_hub import login
 hf_token = os.getenv("HF_TOKEN")
 login(token=hf_token)
 
-
-
 model_id = "meta-llama/Llama-3.2-1B-Instruct"
 pipe = pipeline(
     "text-generation",
@@ -38,18 +36,18 @@ def save_and_analyze_job_description(job_description):
     with open(file_path, "w", encoding="utf-8") as file:
         file.write(job_description)
     
-    # try:
-    #     # JobDescription.py ausführen
-    #     result = subprocess.run(
-    #         ["python", "JobDescription.py", file_path],
-    #         capture_output=True,
-    #         text=True,
-    #         check=True
-    #     )
-    #     return result.stdout
-    # except subprocess.CalledProcessError as e:
-    #     st.error(f"Error running JobDescription.py: {e.stderr}")
-    #     return None
+    try:
+        # JobDescription.py ausführen
+        result = subprocess.run(
+            ["python", "JobDescription.py", file_path],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        st.error(f"Error running JobDescription.py: {e.stderr}")
+        return None
 
 if st.button("Save and Analyze Job Description"):
     if job_description.strip():
@@ -80,7 +78,7 @@ if resume_list:
     df = process_csv_file(resume_list)
 
 # **CSV Processing with bestFit.py**
-if st.button("Find the top 10 candidates for the position."):
+if st.button("Find the best candidates for the position."):
     if resume_list:
         csv_file_path = "uploaded_file.csv"
         with open(csv_file_path, "wb") as file:
