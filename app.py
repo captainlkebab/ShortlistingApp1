@@ -1,15 +1,20 @@
 import streamlit as st
 import pandas as pd
 import subprocess
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import os
+from huggingface_hub import login
 from groq import Groq
-import json
 
-# API-Key und Client initialisieren
+hf_token = os.getenv("HF_TOKEN")
+login(token=hf_token)
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
 client = Groq(api_key=GROQ_API_KEY)
 
-# Streamlit App Header
+# **Streamlit App Header**
 st.title("Welcome to the Shortlisting App")
 
 st.markdown("""
@@ -18,66 +23,38 @@ Simply import candidate resumes in CSV format and upload them here.
 By providing a Job Description, our system evaluates the candidates and outputs the top 10 for further interviews.
 """)
 
-# Job Description Input
+# **Job Description Input**
 st.subheader("Job Description")
 job_description = st.text_area("Insert the Job Description here:", height=300)
 
-def analyze_job_description(job_description):
-    """Analyzes the provided Job Description using Groq."""
-    structure_template = """{
-      "jobTitle": "",
-      "company": "",
-      "location": "",
-      "keyResponsibilities": ["", "", ""],
-      "requiredSkills": ["", "", ""],
-      "preferredQualifications": ["", "", ""]
-    }"""
-
+def save_and_analyze_job_description(job_description):
+    """Speichern und Analyse der Jobbeschreibung."""
+    return job_description
+    
     try:
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an HR Assistant. You will analyze Job Descriptions for the necessary skills, responsibilities, and qualifications needed for the position."
-                },
-                {
-                    "role": "user",
-                    "content": f"Analyze the following Job Description: {job_description} and extract the necessary details using this structure: {structure_template}. DO NOT INVENT THINGS!"
-                }
-            ],
-            temperature=1,
-            max_tokens=1024,
-            top_p=1,
-            stream=False,
-            stop=None,
+        # JobDescription.py ausführen
+        result = subprocess.run(
+            ["python", "JobDescription.py", file_path],
+            capture_output=True,
+            text=True,
+            check=True
         )
-
-        response_content = "".join([chunk.choices[0].delta.content or "" for chunk in completion])
-        
-        # Versuche, JSON zu parsen
-        try:
-            return json.loads(response_content)
-        except json.JSONDecodeError:
-            return {"error": "Failed to parse JSON", "raw_response": response_content}
-
-    except Exception as e:
-        return {"error": str(e)}
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        st.error(f"Error running JobDescription.py: {e.stderr}")
+        return None
 
 if st.button("Save and Analyze Job Description"):
     if job_description.strip():
-        analysis_result = analyze_job_description(job_description)
-        if "error" not in analysis_result:
+        output = save_and_analyze_job_description(job_description)
+        if output:
             st.success("Job description successfully analyzed!")
             st.subheader("Analyzer Output:")
-            st.json(analysis_result)  # Zeige das JSON-Ergebnis direkt an
-        else:
-            st.error("Error analyzing Job Description:")
-            st.text(analysis_result.get("raw_response", "No response available."))
+            st.text(output)
     else:
         st.error("The Job Description field cannot be empty!")
 
-# CSV Upload
+# **CSV Upload**
 st.subheader("CSV Upload")
 resume_list = st.file_uploader("Upload candidate resumes in CSV format:", type=["csv"])
 
@@ -95,13 +72,13 @@ def process_csv_file(csv_file):
 if resume_list:
     df = process_csv_file(resume_list)
 
-# CSV Processing with bestFit.py
+# **CSV Processing with bestFit.py**
 if st.button("Find the best candidates for the position."):
     if resume_list:
         csv_file_path = "uploaded_file.csv"
         with open(csv_file_path, "wb") as file:
             file.write(resume_list.getbuffer())
-
+        
         try:
             # Führe das Skript aus
             result = subprocess.run(
@@ -116,3 +93,4 @@ if st.button("Find the best candidates for the position."):
             st.error(f"Error running bestFit.py: {e.stderr}")
     else:
         st.error("Please upload a CSV file before processing!")
+
