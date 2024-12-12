@@ -5,17 +5,14 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import os
 from huggingface_hub import login
+from groq import Groq
 
 hf_token = os.getenv("HF_TOKEN")
 login(token=hf_token)
 
-model_id = "meta-llama/Llama-3.2-1B-Instruct"
-pipe = pipeline(
-    "text-generation",
-    model=model_id,
-    torch_dtype=torch.bfloat16,
-    device_map="auto",
-)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+client = Groq(api_key=GROQ_API_KEY)
 
 # **Streamlit App Header**
 st.title("Welcome to the Shortlisting App")
@@ -32,9 +29,7 @@ job_description = st.text_area("Insert the Job Description here:", height=300)
 
 def save_and_analyze_job_description(job_description):
     """Speichern und Analyse der Jobbeschreibung."""
-    file_path = "JobDescription.txt"
-    with open(file_path, "w", encoding="utf-8") as file:
-        file.write(job_description)
+    return job_description
     
     try:
         # JobDescription.py ausführen

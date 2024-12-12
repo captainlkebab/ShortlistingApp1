@@ -1,20 +1,14 @@
-import requests
+from groq import Groq
 import json
 import os
-import torch
-from transformers import pipeline
-from huggingface_hub import login
 
-model_id = "meta-llama/Llama-3.3-70B-Instruct"
-pipe = pipeline(
-    "text-generation",
-    model=model_id,
-    torch_dtype=torch.bfloat16,
-    device_map="auto",
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+client = Groq(
+    api_key=GROQ_API_KEY, # Use the GROQ_API_KEY variable directly
 )
 
-# Jobbeschreibung laden
-file_path = "JobDescription.txt"
+
 def load_job_description(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as file:
@@ -23,13 +17,11 @@ def load_job_description(file_path):
         raise FileNotFoundError(f"File '{file_path}' not found.")
     except Exception as e:
         raise RuntimeError(f"Error reading file: {e}")
+
+job_description = load_job_description("Job.txt")  # Adjust the path if necessary
     
-
-job_description = load_job_description(file_path)
-
-# Strukturvorlage für die Extraktion
 structure_template = """{
-  "jobTitle": "", 
+  "jobTitle": "",
   "company": "",
   "location": "",
   "keyResponsibilities": [
@@ -51,13 +43,38 @@ structure_template = """{
 }
 """
 
-messages = [
-    {"role": "system", "content": "You are an HR Assistant. You will analyze Job Descriptions for the necessary skills, responsibilities, and qualifications needed for the position."},
-    {"role": "user", "content": f"Analyze the following Job Description: {job_description} and extract the "
-                    f"necessary details using this structure: {structure_template}. DO NOT INVENT THINGS!"},
-]
-outputs = pipe(
-    messages,
-    max_new_tokens=256,
+from groq import Groq
+
+client = Groq(api_key=GROQ_API_KEY)
+completion = client.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[
+        {
+            "role": "system",
+            "content": "\"You are an HR Assistant. You will analyze Job Descriptions for the necessary skills, responsibilities, and qualifications needed for the position.\""
+        },
+        {
+            "role": "user",
+            "content": f"\"Analyze the following Job Description:{job_description} and extract the necessary details using this structure: {structure_template}. DO NOT INVENT THINGS!\""
+        }
+    ],
+    temperature=1,
+    max_tokens=1024,
+    top_p=1,
+    stream=True,
+    stop=None,
 )
-print(outputs[0]["generated_text"][-1])
+
+# Ausgabe sammeln
+response_content = ""
+for chunk in completion:
+    response_content += chunk.choices[0].delta.content or ""
+
+output_path = "JobAnalysis.json"
+output_data = {"analysis_result": response_content,
+}
+
+with open(output_path, "w", encoding="utf-8") as f:
+    json.dump(output_data, f, ensure_ascii=False, indent=4)
+
+print(f"Analysis result saved to {output_path}")
