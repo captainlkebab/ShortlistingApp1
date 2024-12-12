@@ -82,15 +82,15 @@ if st.button("Find the best candidates for the position."):
         try:
             # Führe das Skript aus
             result = subprocess.run(
-                ["python", "bestFit.py", csv_file_path],
+                ["python", "bestFitNEW.py", csv_file_path],
                 capture_output=True,
                 text=True,
                 check=True
             )
-            st.subheader("Output from bestFit.py:")
+            st.subheader("Output from bestFitNEW.py:")
             st.text(result.stdout)
         except subprocess.CalledProcessError as e:
-            st.error(f"Error running bestFit.py: {e.stderr}")
+            st.error(f"Error running bestFitNEW.py: {e.stderr}")
     else:
         st.error("Please upload a CSV file before processing!")
 
