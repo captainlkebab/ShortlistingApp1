@@ -27,10 +27,8 @@ By providing a Job Description, our system evaluates the candidates and outputs 
 st.subheader("Job Description")
 job_description = st.text_area("Insert the Job Description here:", height=300)
 
-def save_and_analyze_job_description(job_description):
+def save_and_analyze_job_description(job_description, file_path):
     """Speichern und Analyse der Jobbeschreibung."""
-    return job_description
-    
     try:
         # JobDescription.py ausführen
         result = subprocess.run(
@@ -46,7 +44,10 @@ def save_and_analyze_job_description(job_description):
 
 if st.button("Save and Analyze Job Description"):
     if job_description.strip():
-        output = save_and_analyze_job_description(job_description)
+        file_path = "job_description.txt"
+        with open(file_path, "w") as file:
+            file.write(job_description)
+        output = save_and_analyze_job_description(job_description, file_path)
         if output:
             st.success("Job description successfully analyzed!")
             st.subheader("Analyzer Output:")
@@ -93,4 +94,3 @@ if st.button("Find the best candidates for the position."):
             st.error(f"Error running bestFit.py: {e.stderr}")
     else:
         st.error("Please upload a CSV file before processing!")
-
