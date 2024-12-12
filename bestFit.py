@@ -83,3 +83,9 @@ with open(output_path, "w", encoding="utf-8") as f:
 print(f"Analysis result saved to {output_path}")
 
 
+# JSON-Daten direkt parsen
+try:
+    output_data = json.loads(response_content)  # Konvertiere JSON-String zu Python-Dictionary
+    print("Analysis result:", output_data)  # Ergebnis direkt anzeigen
+except json.JSONDecodeError as e:
+    print(f"Fehler beim Laden der JSON-Daten: {e}")
