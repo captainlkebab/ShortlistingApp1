@@ -78,3 +78,12 @@ with open(output_path, "w", encoding="utf-8") as f:
     json.dump(output_data, f, ensure_ascii=False, indent=4)
 
 print(f"Analysis result saved to {output_path}")
+
+# Direkte Ausgabe im Terminal
+try:
+    analysis_result = json.loads(response_content)
+    print("Analysis Result:")
+    print(json.dumps(analysis_result, indent=4, ensure_ascii=False))
+except json.JSONDecodeError as e:
+    print(f"Fehler beim Laden der JSON-Daten: {e}")
+    print("Antwortinhalt:", response_content)
