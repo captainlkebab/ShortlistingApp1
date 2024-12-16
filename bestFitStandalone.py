@@ -7,36 +7,37 @@ import textwrap
 import pandas as pd
 from charset_normalizer import from_path
 
+# Load data from a CSV file
+data = pd.read_csv("uploaded_file.csv")
 
-data=pd.read_csv("uploaded_file.csv")
-
-
-
+# Get the GROQ API key from environment variables
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+# Initialize the client with the GROQ API key
 client = Groq(
-    api_key=GROQ_API_KEY, # Use the GROQ_API_KEY variable directly
+    api_key=GROQ_API_KEY,  # Use the GROQ_API_KEY variable directly
 )
 
-
+# Function to load job description from a file with automatic encoding detection
 def load_job_description(file_path):
     """
-    Liest die Jobbeschreibung aus der angegebenen Datei ein und erkennt die Kodierung automatisch.
+    Reads the job description from the specified file and automatically detects the encoding.
     """
     try:
-        # Kodierung automatisch erkennen und Inhalt als String zurückgeben
+        # Automatically detect encoding and return the content as a string
         detected = from_path(file_path).best()
         if detected is None:
             raise RuntimeError("Failed to detect file encoding.")
-        return str(detected)  # Konvertiert den Inhalt in einen String
+        return str(detected)  # Convert the content into a string
     except FileNotFoundError:
         raise FileNotFoundError(f"File '{file_path}' not found.")
     except Exception as e:
         raise RuntimeError(f"Error reading file: {e}")
-    
+
+# Load the job description from a file
 job_description = load_job_description("Job.txt")  # Adjust the path if necessary
 
-# Extraction from CSV for specific person in Dataframe, not really best Fit checker
+# Define the Pydantic schema to extract details from resumes
 class ResumeExtractionScheme(BaseModel):
     job_title: str = Field(description="Current or most recent job title of the candidate")
     summary: str = Field(description="Brief summary or professional statement of the candidate") 
@@ -50,23 +51,21 @@ class ResumeExtractionScheme(BaseModel):
     contact_email: str = Field(description="Email address of the candidate")
     category: str = Field(description="Category or type of job the candidate is applying for (e.g., HR, IT, Marketing)")
 
-
- # Convert the Pydantic schema to a JSON schema
+# Convert the Pydantic schema to a JSON schema
 json_schema = str(ResumeExtractionScheme.model_json_schema())
 
+# Convert the data to a string representation of the resumes (assuming `text` refers to your DataFrame)
 text = data
 
-# Follow the schema provided below to extract the relevant details. Do not invent information that is not in the provided text. Output JSON only.
-
-
+# Initialize the Groq API client and make a request to analyze the resumes and job description
 client = Groq(api_key=GROQ_API_KEY)
 chat_completion = client.chat.completions.create(
     model="llama-3.3-70b-versatile",
-   messages=[
+    messages=[
         {"role": "system", 
          "content": "You are a Recruiter. Find the top 10 best candidates for the provided Job Description. Explain your reasoning. Output JSON only."},
         {"role": "user",
-        "content": f"Extract information from the following resumes: {text}."
+         "content": f"Extract information from the following resumes: {text}."
         },
     ],
     temperature=1,
@@ -76,24 +75,23 @@ chat_completion = client.chat.completions.create(
     stop=None,
 )
 
-# Ausgabe sammeln
+# Collect the response
 response_content = ""
 for chunk in chat_completion:
     response_content += chunk.choices[0].delta.content or ""
 
+# Save the results to a JSON file
 output_path = "bestFit.json"
-output_data = {"analysis_result": response_content,"job_description": job_description
-}
+output_data = {"analysis_result": response_content, "job_description": job_description}
 
 with open(output_path, "w", encoding="utf-8") as f:
     json.dump(output_data, f, ensure_ascii=False, indent=4)
 
 print(f"Analysis result saved to {output_path}")
 
-
-# JSON-Daten direkt parsen
+# Try to parse the JSON response
 try:
-    output_data = json.loads(response_content)  # Konvertiere JSON-String zu Python-Dictionary
-    print("Analysis result:", output_data)  # Ergebnis direkt anzeigen
+    output_data = json.loads(response_content)  # Convert JSON string to Python dictionary
+    print("Analysis result:", output_data)  # Display the result
 except json.JSONDecodeError as e:
-    print(f"Fehler beim Laden der JSON-Daten: {e}")
+    print(f"Error loading JSON data: {e}")  # If there is a JSON decoding error

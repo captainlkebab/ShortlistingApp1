@@ -3,23 +3,23 @@ import json
 import os
 from charset_normalizer import from_path
 
-# API-Key aus Umgebungsvariablen laden
+# Load API key from environment variables
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# Groq-Client initialisieren
+# Initialize Groq client
 client = Groq(api_key=GROQ_API_KEY)
 
 
 def load_job_description(file_path):
     """
-    Liest die Jobbeschreibung aus der angegebenen Datei ein und erkennt die Kodierung automatisch.
+    Reads the job description from the specified file and automatically detects the encoding.
     """
     try:
-        # Kodierung automatisch erkennen und Inhalt als String zurückgeben
+        # Automatically detect encoding and return content as a string
         detected = from_path(file_path).best()
         if detected is None:
             raise RuntimeError("Failed to detect file encoding.")
-        return str(detected)  # Konvertiert den Inhalt in einen String
+        return str(detected)  # Converts the content to a string
     except FileNotFoundError:
         raise FileNotFoundError(f"File '{file_path}' not found.")
     except Exception as e:
@@ -28,7 +28,7 @@ def load_job_description(file_path):
 
 def analyze_job_description(job_description):
     """
-    Analysiert die Jobbeschreibung mithilfe der Groq-API.
+    Analyzes the job description using the Groq API.
     """
     structure_template = """{
       "jobTitle": "",
@@ -45,7 +45,7 @@ def analyze_job_description(job_description):
       ]
     }"""
 
-    # API-Aufruf zur Analyse
+    # API call for analysis
     completion = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
@@ -55,7 +55,7 @@ def analyze_job_description(job_description):
             },
             {
                 "role": "user",
-                "content": f"Analyze the following Job Description: {job_description} and extract the necessary details using this structure: {structure_template}. DO NOT INVENT THINGS!"
+                "content": f"Analyze the following Job Description: {job_description} and extract the necessary details using this structure: {structure_template}. Just output an JSON, we dont need any other text ! DO NOT INVENT THINGS!"
             }
         ],
         temperature=1,
@@ -65,12 +65,12 @@ def analyze_job_description(job_description):
         stop=None,
     )
 
-    # Ausgabe sammeln
+    # Collect the output
     response_content = ""
     for chunk in completion:
         response_content += chunk.choices[0].delta.content or ""
 
-    # JSON-Daten parsen
+    # Parse JSON data
     try:
         analysis_result = json.loads(response_content)
         return analysis_result
@@ -80,7 +80,7 @@ def analyze_job_description(job_description):
 
 def save_to_json_file(data, output_file_path):
     """
-    Speichert die Analyseergebnisse in einer JSON-Datei.
+    Saves the analysis results to a JSON file.
     """
     try:
         with open(output_file_path, "w", encoding="utf-8") as json_file:
@@ -91,18 +91,18 @@ def save_to_json_file(data, output_file_path):
 
 
 if __name__ == "__main__":
-    # Dateipfade
+    # File paths
     input_file = "Job.txt"
     output_file = "JobAnalyzed.json"
 
     try:
-        # Jobbeschreibung laden
+        # Load the job description
         job_description = load_job_description(input_file)
 
-        # Jobbeschreibung analysieren
+        # Analyze the job description
         analysis_result = analyze_job_description(job_description)
 
-        # Analyseergebnisse speichern
+        # Save the analysis results
         save_to_json_file(analysis_result, output_file)
 
     except Exception as e:
