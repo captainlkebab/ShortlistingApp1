@@ -37,22 +37,22 @@ def load_job_description(file_path):
 # Load the job description from a file
 job_description = load_job_description("Job.txt")  # Adjust the path if necessary
 
-# Define the Pydantic schema to extract details from resumes
-class ResumeExtractionScheme(BaseModel):
-    job_title: str = Field(description="Current or most recent job title of the candidate")
-    summary: str = Field(description="Brief summary or professional statement of the candidate") 
-    skills: List[str] = Field(description="Key skills or expertise mentioned by the candidate") 
-    experience: List[str] = Field(description="List of job roles and responsibilities the candidate has held with relevance to the position")
-    education: List[str] = Field(description="Academic qualifications and degrees obtained by the candidate")
-    certifications: Optional[List[str]] = Field(description="Certifications or training programs completed by the candidate")
-    languages: Optional[List[str]] = Field(description="Languages spoken by the candidate")
-    projects: Optional[List[str]] = Field(description="Projects or work experience relevant to the job applied for")
-    achievements: Optional[List[str]] = Field(description="Notable accomplishments or awards the candidate has received")
-    contact_email: str = Field(description="Email address of the candidate")
-    category: str = Field(description="Category or type of job the candidate is applying for (e.g., HR, IT, Marketing)")
+# # Define the Pydantic schema to extract details from resumes
+# class ResumeExtractionScheme(BaseModel):
+#     job_title: str = Field(description="Current or most recent job title of the candidate")
+#     summary: str = Field(description="Brief summary or professional statement of the candidate") 
+#     skills: List[str] = Field(description="Key skills or expertise mentioned by the candidate") 
+#     experience: List[str] = Field(description="List of job roles and responsibilities the candidate has held with relevance to the position")
+#     education: List[str] = Field(description="Academic qualifications and degrees obtained by the candidate")
+#     certifications: Optional[List[str]] = Field(description="Certifications or training programs completed by the candidate")
+#     languages: Optional[List[str]] = Field(description="Languages spoken by the candidate")
+#     projects: Optional[List[str]] = Field(description="Projects or work experience relevant to the job applied for")
+#     achievements: Optional[List[str]] = Field(description="Notable accomplishments or awards the candidate has received")
+#     contact_email: str = Field(description="Email address of the candidate")
+#     category: str = Field(description="Category or type of job the candidate is applying for (e.g., HR, IT, Marketing)")
 
 # Convert the Pydantic schema to a JSON schema
-json_schema = str(ResumeExtractionScheme.model_json_schema())
+# json_schema = str(ResumeExtractionScheme.model_json_schema())
 
 # Convert the data to a string representation of the resumes (assuming `text` refers to your DataFrame)
 text = data
