@@ -7,9 +7,6 @@ import os
 from huggingface_hub import login
 from groq import Groq
 
-hf_token = os.getenv("HF_TOKEN")
-login(token=hf_token)
-
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 client = Groq(api_key=GROQ_API_KEY)
@@ -20,7 +17,7 @@ st.title("Welcome to the Shortlisting App")
 st.markdown("""
 Through this application, your organization can streamline the hiring process for any open position. 
 Simply import candidate resumes in CSV format and upload them here.
-By providing a Job Description, our system evaluates the candidates and outputs the top 10 for further interviews.
+By providing a Job Description, our system evaluates the candidates and outputs the top 5 best candidates for further review.
 """)
 
 # **Job Description Input**
@@ -44,7 +41,7 @@ def save_and_analyze_job_description(job_description, file_path):
 
 if st.button("Save and Analyze Job Description"):
     if job_description.strip():
-        file_path = "job_description.txt"
+        file_path = "Job.txt"
         with open(file_path, "w") as file:
             file.write(job_description)
         output = save_and_analyze_job_description(job_description, file_path)
