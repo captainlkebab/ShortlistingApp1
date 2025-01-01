@@ -5,87 +5,102 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import textwrap
 import pandas as pd
+from charset_normalizer import from_path
 
-data=pd.read_csv("uploaded_file.csv")
+# Load data from a CSV file
+data = pd.read_csv("uploaded_file.csv")
 
-
-
+# Get the GROQ API key from environment variables
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+# Initialize the client with the GROQ API key
 client = Groq(
-    api_key=GROQ_API_KEY, # Use the GROQ_API_KEY variable directly
+    api_key=GROQ_API_KEY,  # Use the GROQ_API_KEY variable directly
 )
 
-
-def load_job_description(file_path):
+# Funktion zum Laden der JobAnalyzed.json Datei
+def load_job_analyzed(file_path):
+    """
+    Liest die JobAnalyzed.json Datei und gibt den Inhalt als Python-Objekt zurück.
+    """
     try:
+        # Datei öffnen und JSON-Inhalt laden
         with open(file_path, "r", encoding="utf-8") as file:
-            return file.read().strip()
+            job_data = json.load(file)  # Die Datei wird als JSON geladen
+        return job_data
     except FileNotFoundError:
         raise FileNotFoundError(f"File '{file_path}' not found.")
+    except json.JSONDecodeError:
+        raise RuntimeError(f"Error decoding JSON in the file '{file_path}'.")
     except Exception as e:
         raise RuntimeError(f"Error reading file: {e}")
 
-job_description = load_job_description("Job.txt")  # Adjust the path if necessary
 
-# Extraction from CSV for specific person in Dataframe, not really best Fit checker
-class ResumeExtractionScheme(BaseModel):
-    job_title: str = Field(description="Current or most recent job title of the candidate")
-    summary: str = Field(description="Brief summary or professional statement of the candidate") 
-    skills: List[str] = Field(description="Key skills or expertise mentioned by the candidate") 
-    experience: List[str] = Field(description="List of job roles and responsibilities the candidate has held with relevance to the position")
-    education: List[str] = Field(description="Academic qualifications and degrees obtained by the candidate")
-    certifications: Optional[List[str]] = Field(description="Certifications or training programs completed by the candidate")
-    languages: Optional[List[str]] = Field(description="Languages spoken by the candidate")
-    projects: Optional[List[str]] = Field(description="Projects or work experience relevant to the job applied for")
-    achievements: Optional[List[str]] = Field(description="Notable accomplishments or awards the candidate has received")
-    contact_email: str = Field(description="Email address of the candidate")
-    category: str = Field(description="Category or type of job the candidate is applying for (e.g., HR, IT, Marketing)")
-
-
- # Convert the Pydantic schema to a JSON schema
-json_schema = str(ResumeExtractionScheme.model_json_schema())
+# Load the job description from a file
+job_analyzed = load_job_analyzed("JobAnalyzed.json")  # Adjust the path if necessary
 
 text = data
 
-# Follow the schema provided below to extract the relevant details. Do not invent information that is not in the provided text. Output JSON only.
+structure_ranking = {"""
+    rankedCandidates: 
+    [
+        {
+            "name": "",
+            "email": "",
+            "rank":"",
+            "keySkills": [],
+            "experience": "",
+            "reasoning": ""            
+        }
+    ]
+"""}
 
 
+# Initialize the Groq API client and make a request to analyze the resumes and job description
 client = Groq(api_key=GROQ_API_KEY)
 chat_completion = client.chat.completions.create(
     model="llama-3.3-70b-versatile",
-   messages=[
+    messages=[
         {"role": "system", 
-         "content": "You are a Recruiter. Find the top 10 best candidates for the provided Job Description. Explain your reasoning. Output JSON only."},
+         "content":
+        f"You are a Recruiter. Find the top 5 best candidates for the provided Job Description analysis in {job_analyzed} and rank them. Use the {structure_ranking}. Output JSON only."},
         {"role": "user",
-        "content": f"Extract information from the following resumes: {text}."
+         "content": f"Extract information from the following resumes: {text}.Just output an JSON, we dont need any other text ! DO NOT INVENT THINGS."
         },
     ],
-    temperature=1,
+    temperature=0.5, 
     max_tokens=1024,
     top_p=1,
     stream=True,
     stop=None,
 )
 
-# Ausgabe sammeln
+# Collect the response
 response_content = ""
 for chunk in chat_completion:
     response_content += chunk.choices[0].delta.content or ""
 
-output_path = "bestFit.json"
-output_data = {"analysis_result": response_content,
-}
+# Remove triple backticks and the json tag
+response_content = response_content.strip("```json\n").strip("```")
 
-with open(output_path, "w", encoding="utf-8") as f:
-    json.dump(output_data, f, ensure_ascii=False, indent=4)
-
-print(f"Analysis result saved to {output_path}")
-
-
-# JSON-Daten direkt parsen
+# Attempt to parse the response content as JSON
 try:
-    output_data = json.loads(response_content)  # Konvertiere JSON-String zu Python-Dictionary
-    print("Analysis result:", output_data)  # Ergebnis direkt anzeigen
+    analysis_result = json.loads(response_content)
 except json.JSONDecodeError as e:
-    print(f"Fehler beim Laden der JSON-Daten: {e}")
+    print(f"Error parsing JSON response: {e}")
+    analysis_result = {"error": "Failed to parse JSON", "raw_response": response_content}
+
+# Save the results to a JSON file
+output_path = "bestFit.json"
+output_data = {"analysis_result": analysis_result}
+
+try:
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output_data, f, ensure_ascii=False, indent=4)
+    print(f"Analysis result saved to {output_path}")
+except Exception as e:
+    print(f"Error saving JSON data: {e}")
+
+
+
+print(response_content)
