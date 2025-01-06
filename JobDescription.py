@@ -110,5 +110,12 @@ if __name__ == "__main__":
         # Save the analysis results
         save_to_json_file(analysis_result, output_file)
 
+        # Print the LLM output
+        print("LLM Output:")
+        print(analysis_result)
+
     except Exception as e:
         print(f"Error: {e}")
+
+
+        
