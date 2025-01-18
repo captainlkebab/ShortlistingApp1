@@ -1,13 +1,15 @@
 import streamlit as st
 import pandas as pd
 import subprocess
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import os
-from huggingface_hub import login
 from groq import Groq
+import json
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+
+if GROQ_API_KEY is None:
+    raise RuntimeError("GROQ_API_KEY environment variable not set.")
 
 client = Groq(api_key=GROQ_API_KEY)
 
@@ -20,16 +22,73 @@ Simply import candidate resumes in CSV format and upload them here.
 By providing a Job Description, our system evaluates the candidates and outputs the top 5 best candidates for further review.
 """)
 
-# **Job Description Input**
-st.subheader("Job Description")
-job_description = st.text_area("Insert the Job Description here:", height=300)
 
-def save_and_analyze_job_description(job_description, file_path):
-    """Speichern und Analyse der Jobbeschreibung."""
+st.subheader("Job Description Builder")
+ad_creator = st.text_area("Insert Details regarding the role you want to hire for. This includes: Company Name, Location, Role Name, Key Qualifications, etc.", height=100)
+
+
+def save_user_input(input_text,filename):
+    """Save user input to a JSON file."""
+    data = {"input": input_text}
+    if os.path.exists(filename):
+        with open(filename, "r") as file:
+            existing_data = json.load(file)
+    else:
+        existing_data = []
+
+    existing_data.append(data)
+
+    with open(filename, "w") as file:
+        json.dump(existing_data, file, indent=4)
+
+
+def create_job_description(job_ad):
+    """Generate the Job Description using the Groq API."""
     try:
+        # save user input into JSON
+        save_user_input(job_ad, "user_input_jobAdBuilder.json")
+
+        # JobAdBuilder.py ausführen
+        result = subprocess.run(
+            ["python", "JobAdBuilder.py", job_ad],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        st.error(f"Error running JobAdBuilder.py: {e.stderr}")
+        return None
+    
+if st.button("Save and Build Job Description"):
+    if ad_creator.strip():
+        output = create_job_description(ad_creator)
+        if output:
+            st.success("Job description successfully built!")
+            st.subheader("Builder Output:")
+            adjusted_output = st.text_area("Adjust the Job Description if needed:", output, height= 500)
+            if st.button("Save Adjusted Job Description"):
+                with open("AdjustedJobDescription.json", "w") as file:
+                    json.dump({"adjusted_output": adjusted_output}, file, indent=4)
+                st.success("Adjusted Job Description saved successfully!")
+    else:
+        st.error("The Job Description field cannot be empty!")
+
+
+# **Job Description Input**
+st.subheader("Job Description Analyzer")
+job_description = st.text_area("Insert the Job Description here:", height=500)
+
+
+def save_and_analyze_job_description(job_description):
+    """Analyze the Job Description using the Groq API."""
+    try:
+        # save user input
+        save_user_input(job_description, "user_input_JobDescriptionAnalyzer.json")
+
         # JobDescription.py ausführen
         result = subprocess.run(
-            ["python", "JobDescription.py", file_path],
+            ["python", "JobDescription.py", job_description],
             capture_output=True,
             text=True,
             check=True
@@ -39,16 +98,59 @@ def save_and_analyze_job_description(job_description, file_path):
         st.error(f"Error running JobDescription.py: {e.stderr}")
         return None
 
+
+def display_analysis_result(analysis_result):
+    """Display the analysis result a structured format."""
+    st.markdown(f"**Job Title:** {analysis_result.get('jobTitle', '')}")
+    st.markdown(f"**Company:** {analysis_result.get('company', '')}")
+    st.markdown(f"**Location:** {analysis_result.get('location', '')}")
+    st.markdown("**Key Responsibilities:**")
+    for responsibility in analysis_result.get('keyResponsibilities', []):
+        st.markdown(f"- {responsibility}")
+    st.markdown("**Required Skills:**")
+    for skill in analysis_result.get('requiredSkills', []):
+        st.markdown(f"- {skill}")
+    st.markdown("**Preferred Qualifications:**")
+    for qualification in analysis_result.get('preferredQualifications', []):
+        st.markdown(f"- {qualification}")
+
+
 if st.button("Save and Analyze Job Description"):
     if job_description.strip():
-        file_path = "Job.txt"
-        with open(file_path, "w") as file:
-            file.write(job_description)
-        output = save_and_analyze_job_description(job_description, file_path)
+        output = save_and_analyze_job_description(job_description)
         if output:
             st.success("Job description successfully analyzed!")
             st.subheader("Analyzer Output:")
-            st.text(output)
+            try:
+                analysis_result = json.loads(output)
+                display_analysis_result(analysis_result)
+                #Save the analysis result to a JSON file for later use
+                if os.path.exists("JobAnalyzed.json"):
+                    with open("JobAnalyzed.json", "r") as file:
+                        existing_data = json.load(file)
+                else:
+                    existing_data = []
+
+                existing_data.append(analysis_result)
+
+                with open("JobAnalyzed.json", "w") as file:
+                    json.dump(existing_data, file, indent=4)
+
+                adjusted_output = st.text_area("Adjust the Analyzed Job Description if needed:", json.dumps(analysis_result, indent=4), height= 500)
+                if st.button("Save Adjusted Analyzed Job Description"):
+                    if os.path.exists("AdjustedJobAnalyzed.json"):
+                        with open("AdjustedJobAnalyzed.json", "r") as file:
+                            existing_data = json.load(file)
+                    else:
+                        existing_adjusted_data = []
+
+                    existing_adjusted_data.append({"adjusted_output": adjusted_output})
+
+                    with open("AdjustedJobAnalyzed.json", "w") as file:
+                        json.dump(existing_adjusted_data, file, indent=4)
+                    st.success("Adjusted Analyzed Job Description saved!")
+            except json.JSONDecodeError:
+                st.text(output)
     else:
         st.error("The Job Description field cannot be empty!")
 
@@ -61,7 +163,7 @@ def process_csv_file(csv_file):
     try:
         df = pd.read_csv(csv_file)
         st.success("CSV file successfully uploaded!")
-        st.dataframe(df.head())  # Zeige die ersten Zeilen der Datei an
+        st.dataframe(df.head())  # show first rows for checking
         return df
     except Exception as e:
         st.error(f"Error loading CSV file: {e}")
@@ -80,13 +182,17 @@ if st.button("Find the best candidates for the position."):
         try:
             # Führe das Skript aus
             result = subprocess.run(
-                ["python", "bestFit.py", csv_file_path],
+                ["python", "BestFit.py", csv_file_path],
                 capture_output=True,
                 text=True,
                 check=True
             )
             st.subheader("Output from bestFit.py:")
-            st.text(result.stdout)
+            try:
+                analysis_result = json.loads(result.stdout)
+                st.json(analysis_result)
+            except json.JSONDecodeError:
+                st.text(result.stdout)
         except subprocess.CalledProcessError as e:
             st.error(f"Error running bestFit.py: {e.stderr}")
     else:
