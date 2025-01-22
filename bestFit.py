@@ -90,7 +90,7 @@ except json.JSONDecodeError as e:
     print(f"Error parsing JSON response: {e}")
     analysis_result = {"error": "Failed to parse JSON", "raw_response": response_content}
 
-# Save the results to a JSON file
+# Save the results to a JSON file bestFit.json
 output_path = "bestFit.json"
 output_data = {"analysis_result": analysis_result}
 

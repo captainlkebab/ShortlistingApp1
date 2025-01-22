@@ -182,7 +182,7 @@ if st.button("Find the best candidates for the position."):
         try:
             # Führe das Skript aus
             result = subprocess.run(
-                ["python", "BestFit.py", csv_file_path],
+                ["python", "bestFit.py", csv_file_path],
                 capture_output=True,
                 text=True,
                 check=True
