@@ -26,7 +26,7 @@ def generate_job_description(job_info):
                 },
                 {
                     "role": "user",
-                    "content": f"Generate a job description based on the following information: {job_info}"
+                    "content": f"Generate a job description based on the following information: {job_info}.Ensure the language is formal and concise. Include industry-specific terminology where appropriate."
                 }
             ],
             temperature=0.5,

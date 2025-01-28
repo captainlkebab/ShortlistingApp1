@@ -66,7 +66,7 @@ if st.button("Save and Build Job Description"):
         if output:
             st.success("Job description successfully built!")
             st.subheader("Builder Output:")
-            adjusted_output = st.text_area("Adjust the Job Description if needed:", output, height= 500)
+            adjusted_output = st.text_area("Adjust the Job Description if needed:", output, height= 200)
             if st.button("Save Adjusted Job Description"):
                 with open("AdjustedJobDescription.json", "w") as file:
                     json.dump({"adjusted_output": adjusted_output}, file, indent=4)
@@ -77,7 +77,7 @@ if st.button("Save and Build Job Description"):
 
 # **Job Description Input**
 st.subheader("Job Description Analyzer")
-job_description = st.text_area("Insert the Job Description here:", height=500)
+job_description = st.text_area("Insert the Job Description here:", height=200)
 
 
 def save_and_analyze_job_description(job_description):
@@ -136,7 +136,7 @@ if st.button("Save and Analyze Job Description"):
                 with open("JobAnalyzed.json", "w") as file:
                     json.dump(existing_data, file, indent=4)
 
-                adjusted_output = st.text_area("Adjust the Analyzed Job Description if needed:", json.dumps(analysis_result, indent=4), height= 500)
+                adjusted_output = st.text_area("Adjust the Analyzed Job Description if needed:", json.dumps(analysis_result, indent=4), height= 200)
                 if st.button("Save Adjusted Analyzed Job Description"):
                     if os.path.exists("AdjustedJobAnalyzed.json"):
                         with open("AdjustedJobAnalyzed.json", "r") as file:
