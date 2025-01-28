@@ -5,7 +5,7 @@ import os
 
 # LinkedIn OAuth Configuration
 LINKEDIN_CLIENT_ID = os.getenv("LINKEDIN_CLIENT_ID")  # Use an environment variable
-LINKEDIN_CLIENT_SECRET = "WPL_AP1.aQwxJD8zvp3kxbP9./5znnA=="  # Use an environment variable
+LINKEDIN_CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET")  # Use an environment variable
 REDIRECT_URI = "http://localhost:8501"  # Replace with deployed app URL if needed
 
 AUTHORIZATION_URL = "https://www.linkedin.com/oauth/v2/authorization"
